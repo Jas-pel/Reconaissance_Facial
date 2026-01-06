@@ -6,6 +6,7 @@ __pycache__/
 # C extensions
 *.so
 
+base_donnees_visages.json
 venv/
 # Distribution / packaging
 .Python
