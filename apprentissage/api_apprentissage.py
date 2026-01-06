@@ -6,7 +6,7 @@ import threading
 
 from utils.api_utils import (
     charger_modele, get_model, is_model_ready, get_model_error,
-    save_vector_db, load_bd, redimensionner_image, reconnaitre
+    save_vector_db, load_bd, reconnaitre
 )
 
 api = FastAPI()
@@ -47,7 +47,6 @@ async def enroll(prenom: str, file: UploadFile = File(...), force_enroll: bool =
     
     image_bytes = await file.read()
     img = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), 1)
-    img = redimensionner_image(img, max_size=640)  # Optimisation
     
     app_face = get_model()
     faces = app_face.get(img)   # type: ignore

@@ -94,19 +94,6 @@ def load_bd():
         return base_cache
 
 
-def redimensionner_image(img, max_size=640):
-    """
-    Redimensionne l'image si elle est trop grande pour accélérer le traitement.
-    """
-    h, w = img.shape[:2]
-    if max(h, w) > max_size:
-        scale = max_size / max(h, w)
-        new_w = int(w * scale)
-        new_h = int(h * scale)
-        return cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
-    return img
-
-
 def similarite_cosinus(v1, v2):
     """
     Retourne la similarité cosinus entre deux vecteurs.
