@@ -56,10 +56,3 @@ if photo:
         
         # Afficher le résultat et récupérer le nom
         nom_personne = afficher_resultat_reconnaissance(r)
-        
-        # Stocker le résultat dans le session state pour un accès ultérieur
-        if nom_personne and nom_personne != "Inconnu":
-            st.session_state['derniere_personne_reconnue'] = nom_personne
-            
-            # Message pour usage programmatique
-            st.info(f"💾 Résultat stocké : {nom_personne}")

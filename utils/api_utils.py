@@ -3,7 +3,6 @@ Fonctions utilitaires communes pour les APIs de reconnaissance faciale.
 """
 import os
 import json
-import cv2
 import numpy as np
 from insightface.app import FaceAnalysis
 from numpy.linalg import norm
@@ -27,7 +26,7 @@ def charger_modele():
     try:
         print("Chargement du modèle InsightFace...")
         app_face = FaceAnalysis(name="buffalo_l")
-        app_face.prepare(ctx_id=0, det_size=(320, 320))  # Réduit de 640 à 320 pour +rapidité
+        app_face.prepare(ctx_id=0, det_size=(640, 640))     # Possible d'ajuster pour la performance
         modele_pret = True
         print("Modèle chargé")
     except Exception as e:

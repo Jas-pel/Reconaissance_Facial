@@ -41,7 +41,7 @@ if photo:
                     if 'force_enroll' in st.session_state:
                         del st.session_state['force_enroll']
                 elif r["status"] == "already_registered":
-                    st.warning(f"⚠️ Vous avez déjà été enregistré sous le nom **{r['identite']}** (score: {r['score']:.3f})\n\n💡 Voulez-vous vous ré-enrôler pour de meilleurs résultats ?")
+                    st.warning(f"⚠️ Vous avez déjà été enregistré sous le nom **{r['identite']}** (score: {r['score']:.3f}). Voulez-vous vous ré-enrôler pour de meilleurs résultats ?")
                     if st.button("🔄 Oui, ré-enrôler maintenant"):
                         st.session_state['force_enroll'] = True
                         st.rerun()
