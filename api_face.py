@@ -125,6 +125,15 @@ async def enroll(prenom: str, file: UploadFile = File(...)):
     faces = app_face.get(img)   # NOTE : Possible de gagner du temps ici
     if not faces:
         return {"status": "no_face"}
+    
+    # Vérifier si le visage est déjà enregistré
+    vecteur = faces[0].embedding
+    base = load_bd()
+    if base:
+        identite, score = reconnaitre(vecteur, base)
+        if identite != "Inconnu":
+            return {"status": "already_registered", "identite": identite, "score": float(score)}
+    
     save_vector_db(prenom, faces[0].embedding)
     return {"status": "ok"}
 

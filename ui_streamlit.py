@@ -119,12 +119,16 @@ if photo:
                     if r["status"] == "ok":
                         st.success("Enrôlement réussi !")
                         st.balloons()
+                    elif r["status"] == "already_registered":
+                        st.warning(f"⚠️ Vous avez déjà été enregistré sous le nom **{r['identite']}** (score: {r['score']:.3f})")
                     elif r["status"] == "model_not_ready":
                         if attendre_api_et_modele():
                             r = appeler_api(API_URL_ENROLL, files, params={"prenom": prenom})
                             if r and r["status"] == "ok":
                                 st.success("Enrôlement réussi !")
                                 st.balloons()
+                            elif r and r["status"] == "already_registered":
+                                st.warning(f"⚠️ Vous avez déjà été enregistré sous le nom **{r['identite']}** (score: {r['score']:.3f})")
                             else:
                                 st.error("Visage non détecté")
                     else:
