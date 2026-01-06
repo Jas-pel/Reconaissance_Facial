@@ -113,9 +113,10 @@ async def get_status():
 
 
 @api.post("/enroll")
-async def enroll(prenom: str, file: UploadFile = File(...)):
+async def enroll(prenom: str, file: UploadFile = File(...), force_enroll: bool = False):
     """
     Permet d'enrôler un nouveau visage.
+    Si force_enroll=True, ré-enrôle même si le visage existe déjà.
     """
     if not modele_pret:
         return {"status": "model_not_ready"}
@@ -126,10 +127,10 @@ async def enroll(prenom: str, file: UploadFile = File(...)):
     if not faces:
         return {"status": "no_face"}
     
-    # Vérifier si le visage est déjà enregistré
+    # Vérifier si le visage est déjà enregistré (sauf si force_enroll)
     vecteur = faces[0].embedding
     base = load_bd()
-    if base:
+    if base and not force_enroll:
         identite, score = reconnaitre(vecteur, base)
         if identite != "Inconnu":
             return {"status": "already_registered", "identite": identite, "score": float(score)}

@@ -114,21 +114,35 @@ if photo:
             if not prenom:
                 st.warning("Veuillez entrer votre prénom.")
             else:
-                r = appeler_api(API_URL_ENROLL, files, params={"prenom": prenom})
+                # Vérifier si on est en mode de confirmation de ré-enrôlement
+                force_enroll = st.session_state.get('force_enroll', False)
+                
+                r = appeler_api(API_URL_ENROLL, files, params={"prenom": prenom, "force_enroll": force_enroll})
                 if r:
                     if r["status"] == "ok":
                         st.success("Enrôlement réussi !")
                         st.balloons()
+                        # Réinitialiser le flag
+                        if 'force_enroll' in st.session_state:
+                            del st.session_state['force_enroll']
                     elif r["status"] == "already_registered":
-                        st.warning(f"⚠️ Vous avez déjà été enregistré sous le nom **{r['identite']}** (score: {r['score']:.3f})")
+                        st.warning(f"Vous avez déjà été enregistré sous le nom **{r['identite']}** (score: {r['score']:.3f}). Voulez-vous vous ré-enrôler pour de meilleurs résultats ?")
+                        if st.button("🔄 Oui, ré-enrôler maintenant"):
+                            st.session_state['force_enroll'] = True
+                            st.rerun()
                     elif r["status"] == "model_not_ready":
                         if attendre_api_et_modele():
-                            r = appeler_api(API_URL_ENROLL, files, params={"prenom": prenom})
+                            r = appeler_api(API_URL_ENROLL, files, params={"prenom": prenom, "force_enroll": force_enroll})
                             if r and r["status"] == "ok":
                                 st.success("Enrôlement réussi !")
                                 st.balloons()
+                                if 'force_enroll' in st.session_state:
+                                    del st.session_state['force_enroll']
                             elif r and r["status"] == "already_registered":
-                                st.warning(f"⚠️ Vous avez déjà été enregistré sous le nom **{r['identite']}** (score: {r['score']:.3f})")
+                                st.warning(f"⚠️ Vous avez déjà été enregistré sous le nom **{r['identite']}** (score: {r['score']:.3f})\n\n💡 Voulez-vous vous ré-enrôler pour de meilleurs résultats ?")
+                                if st.button("🔄 Oui, ré-enrôler maintenant"):
+                                    st.session_state['force_enroll'] = True
+                                    st.rerun()
                             else:
                                 st.error("Visage non détecté")
                     else:
