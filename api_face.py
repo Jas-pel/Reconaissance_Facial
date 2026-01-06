@@ -16,6 +16,10 @@ app_face = None
 modele_pret = False
 modele_erreur = None
 
+# Cache pour la base de données
+base_cache = None
+base_cache_time = 0
+
 
 def charger_modele():
     """
@@ -25,7 +29,7 @@ def charger_modele():
     try:
         print("Chargement du modèle InsightFace...")
         app_face = FaceAnalysis(name="buffalo_l")
-        app_face.prepare(ctx_id=0, det_size=(640, 640))
+        app_face.prepare(ctx_id=0, det_size=(320, 320))  # Réduit de 640 à 320 pour +rapidité
         modele_pret = True
         print("Modèle chargé")
     except Exception as e:
@@ -37,6 +41,8 @@ def save_vector_db(prenom, vecteur):
     """
     Sauvegarde le vecteur facial dans la base de données.
     """
+    global base_cache, base_cache_time
+    
     data = []
 
     if os.path.exists(DB_FILE):
@@ -50,17 +56,42 @@ def save_vector_db(prenom, vecteur):
 
     with open(DB_FILE, "w") as f:
         json.dump(data, f, indent=4)
+    
+    # Invalider le cache
+    base_cache = None
 
 
 def load_bd():
     """
-    Charge la base de données des visages.
+    Charge la base de données des visages avec mise en cache.
     """
+    global base_cache, base_cache_time
+    
     if not os.path.exists(DB_FILE):
         return []
     
+    # Vérifier si le fichier a été modifié
+    mtime = os.path.getmtime(DB_FILE)
+    if base_cache is not None and mtime == base_cache_time:
+        return base_cache
+    
     with open(DB_FILE, "r") as f:
-        return json.load(f)
+        base_cache = json.load(f)
+        base_cache_time = mtime
+        return base_cache
+
+
+def redimensionner_image(img, max_size=640):
+    """
+    Redimensionne l'image si elle est trop grande pour accélérer le traitement.
+    """
+    h, w = img.shape[:2]
+    if max(h, w) > max_size:
+        scale = max_size / max(h, w)
+        new_w = int(w * scale)
+        new_h = int(h * scale)
+        return cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
+    return img
 
 
 def similarite_cosinus(v1, v2):
@@ -123,7 +154,8 @@ async def enroll(prenom: str, file: UploadFile = File(...), force_enroll: bool =
     
     image_bytes = await file.read()
     img = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), 1)
-    faces = app_face.get(img)   # NOTE : Possible de gagner du temps ici
+    img = redimensionner_image(img, max_size=640)  # Optimisation
+    faces = app_face.get(img)
     if not faces:
         return {"status": "no_face"}
     
@@ -149,7 +181,8 @@ async def recognize(file: UploadFile = File(...)):
     
     image_bytes = await file.read()
     img = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), 1)
-    faces = app_face.get(img)   # NOTE : Possible de gagner du temps ici
+    img = redimensionner_image(img, max_size=640)  # Optimisation
+    faces = app_face.get(img)
     if not faces:
         return {"status": "no_face"}
     vecteur = faces[0].embedding
