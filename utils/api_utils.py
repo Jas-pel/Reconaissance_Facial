@@ -1,15 +1,13 @@
+"""
+Fonctions utilitaires communes pour les APIs de reconnaissance faciale.
+"""
 import os
 import json
 import cv2
 import numpy as np
-from fastapi import FastAPI, UploadFile, File
-import uvicorn
 from insightface.app import FaceAnalysis
 from numpy.linalg import norm
 from const import DB_FILE, SEUIL_RECONNAISSANCE
-import threading
-
-api = FastAPI()
 
 # Variables globales pour le modèle
 app_face = None
@@ -37,11 +35,26 @@ def charger_modele():
         print(f"Erreur de chargement : {e}")
 
 
+def get_model():
+    """Retourne le modèle chargé."""
+    return app_face
+
+
+def is_model_ready():
+    """Retourne True si le modèle est prêt."""
+    return modele_pret
+
+
+def get_model_error():
+    """Retourne l'erreur du modèle s'il y en a une."""
+    return modele_erreur
+
+
 def save_vector_db(prenom, vecteur):
     """
     Sauvegarde le vecteur facial dans la base de données.
     """
-    global base_cache, base_cache_time
+    global base_cache
     
     data = []
 
@@ -118,77 +131,3 @@ def reconnaitre(vecteur, base):
     if meilleur_score < SEUIL_RECONNAISSANCE:
         meilleure_identite = "Inconnu"
     return meilleure_identite, meilleur_score
-
-
-def start_api():
-    """
-    Initialise et démarre l'API FastAPI.
-    """
-    # Démarrer le chargement du modèle en arrière-plan
-    thread = threading.Thread(target=charger_modele, daemon=True)
-    thread.start()
-    
-    uvicorn.run(api, host="127.0.0.1", port=8000, log_level="error")
-
-
-# --------- Endpoints ---------
-@api.get("/status")
-async def get_status():
-    """Retourne l'état du modèle."""
-    if modele_erreur:
-        return {"status": "error", "message": modele_erreur}
-    elif modele_pret:
-        return {"status": "ready"}
-    else:
-        return {"status": "loading"}
-
-
-@api.post("/enroll")
-async def enroll(prenom: str, file: UploadFile = File(...), force_enroll: bool = False):
-    """
-    Permet d'enrôler un nouveau visage.
-    Si force_enroll=True, ré-enrôle même si le visage existe déjà.
-    """
-    if not modele_pret:
-        return {"status": "model_not_ready"}
-    
-    image_bytes = await file.read()
-    img = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), 1)
-    img = redimensionner_image(img, max_size=640)  # Optimisation
-    faces = app_face.get(img)
-    if not faces:
-        return {"status": "no_face"}
-    
-    # Vérifier si le visage est déjà enregistré (sauf si force_enroll)
-    vecteur = faces[0].embedding
-    base = load_bd()
-    if base and not force_enroll:
-        identite, score = reconnaitre(vecteur, base)
-        if identite != "Inconnu":
-            return {"status": "already_registered", "identite": identite, "score": float(score)}
-    
-    save_vector_db(prenom, faces[0].embedding)
-    return {"status": "ok"}
-
-
-@api.post("/recognize")
-async def recognize(file: UploadFile = File(...)):
-    """
-    Permet de reconnaître un visage.
-    """
-    if not modele_pret:
-        return {"status": "model_not_ready"}
-    
-    image_bytes = await file.read()
-    img = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), 1)
-    img = redimensionner_image(img, max_size=640)  # Optimisation
-    faces = app_face.get(img)
-    if not faces:
-        return {"status": "no_face"}
-    vecteur = faces[0].embedding
-    base = load_bd()
-    if not base:
-        return {"status": "no_db"}
-    identite, score = reconnaitre(vecteur, base)
-    return {"status": "ok", "identite": identite, "score": float(score)}
-
