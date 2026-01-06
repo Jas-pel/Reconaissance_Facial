@@ -7,6 +7,6 @@ if __name__ == "__main__":
     print("Démarrage de l'API (le modèle se chargera en arrière-plan)...")
     api_process = subprocess.Popen([sys.executable, "-c", "from api_face import start_api; start_api()"])
     
-    # Lancer l'UI Streamlit (qui s'affichera immédiatement)
-    print("Démarrage de l'interface Streamlit...")
-    subprocess.run(["streamlit", "run", "ui_streamlit.py"])
+    # Lancer l'UI Streamlit pour l'apprentissage
+    print("Démarrage de l'interface d'apprentissage...")
+    subprocess.run(["streamlit", "run", "ui_apprentissage.py"])
