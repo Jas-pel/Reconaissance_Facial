@@ -1,5 +1,5 @@
 """
-Fonctions utilitaires communes pour les APIs de reconnaissance faciale.
+Fonctions utilitaires communes pour les APIs.
 """
 import os
 import json
@@ -23,8 +23,8 @@ def charger_modele():
     Charge le modèle InsightFace en arrière-plan.
     """
     global app_face, modele_pret, modele_erreur
+    print("Chargement du modèle InsightFace...")
     try:
-        print("Chargement du modèle InsightFace...")
         app_face = FaceAnalysis(name="buffalo_l")
         app_face.prepare(ctx_id=0, det_size=(640, 640))     # Possible d'ajuster pour la performance
         modele_pret = True
@@ -114,6 +114,4 @@ def reconnaitre(vecteur, base):
             meilleur_score = score
             meilleure_identite = entree["identifiant"]
 
-    if meilleur_score < SEUIL_RECONNAISSANCE:
-        meilleure_identite = "Inconnu"
     return meilleure_identite, meilleur_score

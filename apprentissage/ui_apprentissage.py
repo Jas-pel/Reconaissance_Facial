@@ -138,14 +138,13 @@ if st.session_state.enrollment_prenom and etape_actuelle < 3:
                 # Vérifier si c'était la dernière photo
                 if st.session_state.etape_capture >= 3:
                     st.balloons()
-                    st.success("🎉 **Enrôlement complet !** Les 3 photos ont été enregistrées avec succès.")
+                    st.success("**Enrôlement complet !** Les 3 photos ont été enregistrées avec succès.")
                 else:
                     st.info("➡️ Passez à la photo suivante...")
                     st.rerun()
                     
             elif result.get("already_registered"):
-                st.warning(f"⚠️ Vous avez déjà été enregistré sous le nom **{result['identite']}** (score: {result['score']:.3f})")
-                st.write("💡 Voulez-vous vous ré-enrôler pour améliorer la reconnaissance ?")
+                st.warning(f"⚠️ Vous avez déjà été enregistré sous le nom **{result['identite']}** (score: {result['score']:.3f}). Voulez-vous vous ré-enrôler pour améliorer la reconnaissance ?")
                 if st.button("🔄 Oui, ré-enrôler maintenant"):
                     st.session_state['force_enroll'] = True
                     st.rerun()
@@ -155,11 +154,11 @@ if st.session_state.enrollment_prenom and etape_actuelle < 3:
 
 # Affichage du résumé final
 elif etape_actuelle >= 3:
-    st.success("🎉 **Enrôlement terminé avec succès !**")
+    st.success("**Enrôlement terminé avec succès !**")
     st.write(f"**Utilisateur** : {st.session_state.enrollment_prenom}")
     st.write(f"**Photos enregistrées** : {', '.join(st.session_state.photos_validees)}")
     st.write("Vous pouvez maintenant utiliser la reconnaissance faciale.")
     
-    if st.button("✨ Enrôler une autre personne"):
+    if st.button("Enrôler une autre personne"):
         reinitialiser_enrolement()
         st.rerun()

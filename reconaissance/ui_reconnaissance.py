@@ -5,12 +5,14 @@ import os
 # Ajouter la racine du projet au path pour Streamlit
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from const import API_URL_RECO, API_URL_STATUS_RECONNAISSANCE
+from const import API_URL_RECO, API_URL_STATUS_RECONNAISSANCE, SEUIL_RECONNAISSANCE
 from utils.ui_utils import attendre_api_et_modele, appeler_api
 
 
 def afficher_resultat_reconnaissance(r):
-    """Affiche le résultat de la reconnaissance et retourne le nom."""
+    """
+    Affiche le résultat de la reconnaissance et retourne le nom.
+    """
     if not r:
         return None
     
@@ -27,7 +29,7 @@ def afficher_resultat_reconnaissance(r):
         st.subheader("🔍 Résultat de la reconnaissance")
         st.metric("Score de confiance", f"{score:.3f}")
         
-        if score >= 0.35 and identite != "Inconnu":
+        if score >= SEUIL_RECONNAISSANCE and identite != "Inconnu":
             st.success(f"✅ Bonjour **{identite}** !")
             return identite
         else:
