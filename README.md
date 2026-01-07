@@ -2,19 +2,29 @@
 
 Projet de reconnaissance faciale utilisant InsightFace avec une architecture modulaire séparée pour l'apprentissage et la reconnaissance.
 
+## 🆕 Nouveauté : Enrôlement Multi-Photos
+
+Le système utilise désormais un **enrôlement en 3 photos** pour améliorer la robustesse de la reconnaissance :
+- 📷 Photo 1 : Visage de **face**
+- 📷 Photo 2 : Visage tourné vers la **gauche** (~30°)
+- 📷 Photo 3 : Visage tourné vers la **droite** (~30°)
+
+Cette approche permet de capturer plusieurs angles du visage, améliorant significativement la précision sans changer de modèle.
+
 ## Architecture
 
 ```
 Reconaissance_Facial/
 ├── const.py                        # Configuration globale
-├── utils.py                        # Fonctions communes pour les UIs
-├── api_utils.py                    # Fonctions communes pour les APIs
-├── base_donnees_visages.json       # Base de données
+├── base_donnees_visages.json       # Base de données des embeddings
 ├── requirements.txt
 ├── README.md
+├── utils/
+│   ├── ui_utils.py                # Fonctions communes pour les UIs
+│   └── api_utils.py               # Fonctions communes pour les APIs
 ├── apprentissage/
 │   ├── api_apprentissage.py       # API d'enrôlement (port 8000)
-│   ├── ui_apprentissage.py        # Interface d'enrôlement
+│   ├── ui_apprentissage.py        # Interface d'enrôlement multi-photos
 │   └── run_apprentissage.py       # Lance l'apprentissage
 └── reconaissance/
     ├── api_reconnaissance.py      # API de reconnaissance (port 8001)
@@ -28,8 +38,8 @@ Reconaissance_Facial/
   - Apprentissage (port 8000) : Enrôlement de nouveaux visages
   - Reconnaissance (port 8001) : Identification de visages
 - **Interfaces dédiées** : Une interface pour chaque fonctionnalité
-- **Modèle IA** : InsightFace (buffalo_l) optimisé (320x320)
-- **Code partagé** : Fonctions communes dans `utils.py` et `api_utils.py`
+- **Modèle IA** : InsightFace (buffalo_l)
+- **Code partagé** : Fonctions communes dans `utils/`
 
 ---
 
@@ -54,14 +64,14 @@ API_URL_RECO = "http://127.0.0.1:8001/recognize"
 API_URL_STATUS_RECONNAISSANCE = "http://127.0.0.1:8001/status"
 ```
 
-#### `utils.py` - Fonctions communes pour les UIs
+#### `utils/ui_utils.py` - Fonctions communes pour les UIs
 
 **Rôle** : Fonctions partagées par les interfaces Streamlit
 
 - `attendre_api_et_modele(api_url_status)` : Attend que l'API soit prête
 - `appeler_api(url, files, params, api_url_status)` : Appelle l'API avec gestion d'erreurs
 
-#### `api_utils.py` - Fonctions communes pour les APIs
+#### `utils/api_utils.py` - Fonctions communes pour les APIs
 
 **Rôle** : Fonctions partagées par les APIs FastAPI
 
@@ -69,7 +79,6 @@ API_URL_STATUS_RECONNAISSANCE = "http://127.0.0.1:8001/status"
 - `get_model()` / `is_model_ready()` / `get_model_error()` : Gestion du modèle
 - `load_bd()` : Charge la base de données avec cache
 - `save_vector_db()` : Sauvegarde un vecteur facial
-- `redimensionner_image()` : Optimise la taille de l'image
 - `similarite_cosinus()` : Calcule la similarité entre vecteurs
 - `reconnaitre()` : Identifie un visage dans la base
 
@@ -94,20 +103,30 @@ API_URL_STATUS_RECONNAISSANCE = "http://127.0.0.1:8001/status"
 **Fonctionnalités** :
 - Détection de doublons (vérifie si le visage existe déjà)
 - Ré-enrôlement possible avec `force_enroll=True`
-- Optimisation d'image avant traitement
+- Support multi-photos (3 embeddings par utilisateur)
 
-#### `ui_apprentissage.py` - Interface d'enrôlement
+#### `ui_apprentissage.py` - Interface d'enrôlement Multi-Photos
 
-**Rôle** : Interface web pour ajouter des personnes
+**Rôle** : Interface web pour ajouter des personnes avec 3 photos guidées
 
 - **Framework** : Streamlit
 - **Communication** : HTTP requests vers l'API (port 8000)
 
+**Processus d'enrôlement en 3 étapes** :
+
+| Étape | Instruction | Description |
+|-------|-------------|-------------|
+| 1/3 | Visage de FACE | Regarder directement la caméra |
+| 2/3 | Visage vers la GAUCHE | Tourner la tête ~30° vers la gauche |
+| 3/3 | Visage vers la DROITE | Tourner la tête ~30° vers la droite |
+
 **Fonctionnalités** :
-- Capture photo via webcam
-- Saisie du prénom
-- Détection automatique des doublons
-- Proposition de ré-enrôlement pour améliorer la précision
+- ✅ Capture guidée étape par étape
+- ✅ Barre de progression visuelle (0/3 → 3/3)
+- ✅ Détection automatique des doublons (1ère photo uniquement)
+- ✅ Proposition de ré-enrôlement pour améliorer la précision
+- ✅ Bouton "Recommencer" pour réinitialiser le processus
+- ✅ Résumé final avec confirmation
 
 #### `run_apprentissage.py` - Lanceur
 
@@ -172,26 +191,39 @@ python reconaissance/run_reconnaissance.py
 
 #### `base_donnees_visages.json`
 
-**Rôle** : Stockage des vecteurs faciaux
+**Rôle** : Stockage des vecteurs faciaux (embeddings)
+
+Avec l'enrôlement multi-photos, chaque utilisateur possède **3 entrées** :
 
 ```json
 [
   {
     "identifiant": "Jean",
-    "vecteur": [0.123, -0.456, 0.789, ...]
+    "vecteur": [0.123, -0.456, ...]   // Photo face
+  },
+  {
+    "identifiant": "Jean",
+    "vecteur": [0.234, -0.567, ...]   // Photo gauche
+  },
+  {
+    "identifiant": "Jean",
+    "vecteur": [0.345, -0.678, ...]   // Photo droite
   },
   {
     "identifiant": "Marie",
-    "vecteur": [0.321, -0.654, 0.987, ...]
+    "vecteur": [0.321, -0.654, ...]   // Photo face
   }
+  // ... etc
 ]
 ```
+
+Lors de la reconnaissance, le système compare le visage à **tous les embeddings** et retourne le meilleur score, améliorant ainsi la robustesse.
 
 ---
 
 ## 🔄 Flux de fonctionnement
 
-### Enrôlement (Apprentissage)
+### Enrôlement Multi-Photos (Apprentissage)
 
 ```
 1. run_apprentissage.py démarre
@@ -200,13 +232,20 @@ python reconaissance/run_reconnaissance.py
    ↓
 3. Streamlit démarre → Interface visible immédiatement
    ↓
-4. User saisit prénom + prend photo → Streamlit envoie à l'API
+4. User saisit prénom
    ↓
-5. API vérifie si visage existe déjà dans la base
+5. ÉTAPE 1/3 : Capture photo FACE
+   ├─ Envoi à l'API → Vérification doublon
+   ├─ Si nouveau → Enregistre embedding #1
+   └─ Si existant → Propose ré-enrôlement
    ↓
-6. Si nouveau → Enregistre | Si existant → Propose ré-enrôlement
+6. ÉTAPE 2/3 : Capture photo GAUCHE
+   └─ Envoi à l'API → Enregistre embedding #2
    ↓
-7. Streamlit affiche confirmation
+7. ÉTAPE 3/3 : Capture photo DROITE
+   └─ Envoi à l'API → Enregistre embedding #3
+   ↓
+8. ✅ Enrôlement complet (3 embeddings pour 1 utilisateur)
 ```
 
 ### Reconnaissance
@@ -259,19 +298,17 @@ python reconaissance/run_reconnaissance.py
 
 ## Points forts de cette architecture
 
+✅ **Enrôlement multi-angles** : 3 photos pour une meilleure robustesse
+
 ✅ **Séparation complète** : Apprentissage et reconnaissance sont indépendants
 
-✅ **Code réutilisable** : Fonctions communes dans `utils.py` et `api_utils.py`
+✅ **Code réutilisable** : Fonctions communes dans `utils/`
 
 ✅ **APIs indépendantes** : Peuvent servir plusieurs clients simultanément
 
-✅ **Optimisations** : 
-   - Cache de la base de données
-   - Redimensionnement d'images automatique
-   - Détection de modèle de 640x640 à 320x320 (4x plus rapide)
-
 ✅ **Expérience utilisateur** : 
-   - Interface accessible immédiatement
+   - Interface guidée étape par étape
+   - Barre de progression visuelle
    - Détection de doublons lors de l'enrôlement
    - Proposition de ré-enrôlement pour améliorer la précision
 
@@ -294,12 +331,15 @@ python reconaissance/run_reconnaissance.py
 
 ## Paramètres
 
-- **Seuil de reconnaissance** : 0.35 (configurable dans `const.py`)
-- **Taille de détection** : 320x320 pixels (optimisé pour la vitesse)
-- **Taille max image** : 640 pixels (redimensionnement automatique)
-- **Modèle** : buffalo_l (InsightFace)
-- **Similarité** : Cosinus
-- **Ports** : 8000 (apprentissage), 8001 (reconnaissance)
+| Paramètre | Valeur | Description |
+|-----------|--------|-------------|
+| Seuil de reconnaissance | 0.35 | Configurable dans `const.py` |
+| Taille de détection | 640x640 | Résolution du modèle |
+| Photos par enrôlement | 3 | Face, Gauche, Droite |
+| Modèle | buffalo_l | InsightFace |
+| Similarité | Cosinus | Méthode de comparaison |
+| Port apprentissage | 8000 | API d'enrôlement |
+| Port reconnaissance | 8001 | API de reconnaissance |
 
 ---
 
@@ -342,5 +382,7 @@ python reconaissance/run_reconnaissance.py
 - Le modèle InsightFace se télécharge automatiquement au premier lancement
 - La base de données est créée automatiquement lors du premier enrôlement
 - Les interfaces peuvent être utilisées immédiatement, même pendant le chargement des modèles
-- Les fonctions communes sont dans `utils.py` (UI) et `api_utils.py` (API)
+- Les fonctions communes sont dans `utils/ui_utils.py` (UI) et `utils/api_utils.py` (API)
 - La détection de doublons lors de l'enrôlement évite les erreurs d'enregistrement
+- **Chaque utilisateur génère 3 embeddings** (face, gauche, droite) pour une meilleure reconnaissance
+- La reconnaissance compare automatiquement avec tous les embeddings et retourne le meilleur match
